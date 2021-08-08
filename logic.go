@@ -20,10 +20,10 @@ func info() BattlesnakeInfoResponse {
 	return BattlesnakeInfoResponse{
 		APIVersion: "1",
 		Author:     "rthorpeii",
-		Color:      "#0033cc", 
+		Color:      "#0033cc",
 		Head:       "silly",
 		Tail:       "bolt",
-  }
+	}
 }
 
 // This function is called everytime your Battlesnake is entered into a game.
@@ -67,22 +67,36 @@ func move(state GameState) BattlesnakeMoveResponse {
 	// Use information in GameState to prevent your Battlesnake from moving beyond the boundaries of the board.
 	boardWidth := state.Board.Width
 	boardHeight := state.Board.Height
-  
-  if myHead.X == 0 {
-    possibleMoves["left"] = false
-  } else if myHead.X == boardWidth - 1 {
-    possibleMoves["right"] = false
-  }
 
-  if myHead.Y == 0 {
-    possibleMoves["down"] = false
-  } else if myHead.Y == boardHeight - 1 {
-    possibleMoves["up"] = false
-  }
+	if myHead.X == 0 {
+		possibleMoves["left"] = false
+	} else if myHead.X == boardWidth-1 {
+		possibleMoves["right"] = false
+	}
+
+	if myHead.Y == 0 {
+		possibleMoves["down"] = false
+	} else if myHead.Y == boardHeight-1 {
+		possibleMoves["up"] = false
+	}
 
 	// TODO: Step 2 - Don't hit yourself.
 	// Use information in GameState to prevent your Battlesnake from colliding with itself.
-	// mybody := state.You.Body
+	mybody := state.You.Body
+
+	safeCoords := adjacentSafe(possibleMoves, myHead)
+	for _, bodySpot := range mybody {
+		if len(safeCoords) == 0 { // exit early if there are no safe spots
+			break
+		}
+		for dir, safeCoord := range safeCoords {
+			if bodySpot == safeCoord {
+				possibleMoves[dir] = false
+				delete(possibleMoves, dir)
+				break
+			}
+		}
+	}
 
 	// TODO: Step 3 - Don't collide with others.
 	// Use information in GameState to prevent your Battlesnake from colliding with others.
@@ -111,4 +125,25 @@ func move(state GameState) BattlesnakeMoveResponse {
 	return BattlesnakeMoveResponse{
 		Move: nextMove,
 	}
+}
+
+// returns the coordinates of points adjacent to the current position (pos) which are safe to move into.
+func adjacentSafe(possibleMoves map[string]bool, pos Coord) map[string]Coord {
+	adjacentCoords := map[string]Coord{}
+	for move, safe := range possibleMoves {
+		if safe {
+			switch move {
+			case "up":
+				adjacentCoords[move] = Coord{pos.X, pos.Y + 1}
+			case "down":
+				adjacentCoords[move] = Coord{pos.X, pos.Y - 1}
+			case "left":
+				adjacentCoords[move] = Coord{pos.X - 1, pos.Y}
+			case "right":
+				adjacentCoords[move] = Coord{pos.X + 1, pos.Y}
+			}
+		}
+	}
+
+	return adjacentCoords
 }
